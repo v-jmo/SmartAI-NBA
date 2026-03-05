@@ -18,16 +18,15 @@ from tracking.database import (
     initialize_database,
 )
 
+# Import shared constants from the engine package
+# BEGINNER NOTE: We import from engine/__init__.py so there's
+# only ONE place that defines what stat types are valid.
+from engine import VALID_STAT_TYPES
+
 
 # ============================================================
 # SECTION: Valid Values for Validation
 # ============================================================
-
-# Valid stat types we can track
-VALID_STAT_TYPES = {
-    "points", "rebounds", "assists", "threes",
-    "steals", "blocks", "turnovers"
-}
 
 # Valid bet directions
 VALID_DIRECTIONS = {"OVER", "UNDER"}

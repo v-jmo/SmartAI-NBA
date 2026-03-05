@@ -23,6 +23,13 @@ from engine.math_helpers import (
 
 
 # ============================================================
+# SECTION: Module-Level Constants
+# ============================================================
+
+# Probability of foul trouble in any given game.
+# About 12% of games, a player picks up 4-5 fouls and sits.
+# This is based on historical NBA foul-out/sit-out data.
+FOUL_TROUBLE_PROBABILITY = 0.12
 # SECTION: Monte Carlo Simulation Core
 # Monte Carlo = run the same random experiment thousands of
 # times and look at the overall distribution of results.
@@ -246,11 +253,10 @@ def _simulate_foul_trouble_minutes_reduction():
         float: Fraction of minutes reduced (0.0 to 0.25)
     """
     # About 12% chance of meaningful foul trouble in any game
-    foul_trouble_probability = 0.12
-
+    # Using the module constant instead of a magic number
     random_roll = random.random()
 
-    if random_roll < foul_trouble_probability:
+    if random_roll < FOUL_TROUBLE_PROBABILITY:
         # Foul trouble: lose 5%-25% of typical minutes
         minutes_reduction = random.uniform(0.05, 0.25)
         return minutes_reduction

@@ -11,6 +11,15 @@
 # Standard library only
 import math  # For rounding calculations
 
+# ============================================================
+# SECTION: Module-Level Constants
+# ============================================================
+
+# Coefficient of variation (std / mean) above which a stat is
+# considered "too unpredictable" to bet reliably.
+# CV of 0.55 means the std is 55% of the average — very noisy.
+HIGH_VARIANCE_CV_THRESHOLD = 0.55
+
 
 # ============================================================
 # SECTION: Force Definitions
@@ -300,7 +309,7 @@ def should_avoid_prop(
     # Reason 2: High variance relative to line (too unpredictable)
     if stat_average > 0:
         coefficient_of_variation = stat_standard_deviation / stat_average
-        if coefficient_of_variation > 0.55:
+        if coefficient_of_variation > HIGH_VARIANCE_CV_THRESHOLD:
             avoid_reasons.append(
                 f"High variance stat (CV={coefficient_of_variation:.2f}) — very unpredictable"
             )

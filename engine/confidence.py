@@ -26,6 +26,20 @@ WEIGHT_DIRECTIONAL_AGREEMENT = 0.20  # Multiple factors agree (20%)
 WEIGHT_MATCHUP_FAVORABILITY = 0.12   # How good the matchup is (12%)
 WEIGHT_HISTORICAL_CONSISTENCY = 0.08  # Player's track record (8%)
 
+# Validate that weights sum to exactly 1.0 (they must — that's the rule for weights).
+# This assertion catches any accidental edits that would break the model silently.
+_ALL_WEIGHTS = (
+    WEIGHT_PROBABILITY_STRENGTH
+    + WEIGHT_EDGE_MAGNITUDE
+    + WEIGHT_DIRECTIONAL_AGREEMENT
+    + WEIGHT_MATCHUP_FAVORABILITY
+    + WEIGHT_HISTORICAL_CONSISTENCY
+)
+assert abs(_ALL_WEIGHTS - 1.0) < 1e-9, (
+    f"Confidence weights must sum to 1.0, but got {_ALL_WEIGHTS:.4f}. "
+    "Check the WEIGHT_* constants in confidence.py."
+)
+
 # Tier thresholds (0-100 scale)
 PLATINUM_TIER_MINIMUM_SCORE = 80  # Top-tier picks
 GOLD_TIER_MINIMUM_SCORE = 65      # Strong picks

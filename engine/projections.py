@@ -15,8 +15,17 @@ import math  # For rounding and calculation helpers
 
 
 # ============================================================
-# SECTION: Main Projection Builder
+# SECTION: Module-Level Constants
 # ============================================================
+
+# League average game total (combined score of both teams).
+# ~220 points per game as of the 2025-26 NBA season.
+# Update this each season as pace/scoring trends shift.
+LEAGUE_AVERAGE_GAME_TOTAL = 220.0
+
+# League average possessions per game (pace baseline).
+# Used to compute pace adjustment factors.
+LEAGUE_AVERAGE_PACE = 98.5
 
 def build_player_projection(
     player_data,
@@ -118,12 +127,11 @@ def build_player_projection(
 
     # --- Factor 5: Game Total / Scoring Environment ---
     # High-total games (230+ pts projected) are fast-paced, high scoring
-    # Neutral total is around 220; adjust proportionally
-    league_average_total = 220.0
+    # Neutral total is LEAGUE_AVERAGE_GAME_TOTAL; adjust proportionally
     if game_total > 0:
         # BEGINNER NOTE: This creates a small boost/penalty based on
         # how far the total is from average. Capped at ±5%
-        game_total_factor = 1.0 + ((game_total - league_average_total) / league_average_total) * 0.5
+        game_total_factor = 1.0 + ((game_total - LEAGUE_AVERAGE_GAME_TOTAL) / LEAGUE_AVERAGE_GAME_TOTAL) * 0.5
         game_total_factor = max(0.95, min(1.05, game_total_factor))  # Cap at ±5%
     else:
         game_total_factor = 1.0  # Neutral if no total provided
@@ -244,7 +252,7 @@ def _get_pace_adjustment_factor(
     Returns:
         float: Pace multiplier (typically 0.93 to 1.07)
     """
-    league_average_pace = 98.5  # League average possessions per game
+    league_average_pace = LEAGUE_AVERAGE_PACE  # From module-level constant
 
     player_team_pace = league_average_pace   # Default if not found
     opponent_team_pace = league_average_pace  # Default if not found
