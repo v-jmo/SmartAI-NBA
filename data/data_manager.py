@@ -10,6 +10,7 @@
 import csv        # Built-in CSV reader/writer
 import os         # File path operations
 import json       # For session state persistence
+import datetime   # For timestamp handling
 from pathlib import Path  # Modern file path handling
 
 
@@ -27,6 +28,11 @@ PLAYERS_CSV_PATH = DATA_DIRECTORY / "sample_players.csv"
 PROPS_CSV_PATH = DATA_DIRECTORY / "sample_props.csv"
 TEAMS_CSV_PATH = DATA_DIRECTORY / "teams.csv"
 DEFENSIVE_RATINGS_CSV_PATH = DATA_DIRECTORY / "defensive_ratings.csv"
+
+# Path to the live data timestamp file
+# BEGINNER NOTE: This JSON file is created by live_data_fetcher.py
+# when real data is downloaded. Its existence tells us if live data is loaded.
+LAST_UPDATED_JSON_PATH = DATA_DIRECTORY / "last_updated.json"
 
 # ============================================================
 # END SECTION: File Path Constants
@@ -364,4 +370,111 @@ def get_csv_template():
 
 # ============================================================
 # END SECTION: Props Management
+# ============================================================
+
+
+# ============================================================
+# SECTION: Live Data Detection Functions
+# Check if live data has been loaded, and when it was last updated.
+# ============================================================
+
+def is_using_live_data():
+    """
+    Check whether the app is currently using live NBA data or sample data.
+
+    Looks for the last_updated.json file created by live_data_fetcher.py.
+    If the file exists and has the 'is_live' flag, we're using live data.
+
+    Returns:
+        bool: True if live data is loaded, False if using sample data.
+
+    Example:
+        if is_using_live_data():
+            st.success("Using live data!")
+        else:
+            st.info("Using sample data.")
+    """
+    # Check if the timestamp file exists
+    if not LAST_UPDATED_JSON_PATH.exists():
+        return False  # File doesn't exist = no live data has been fetched
+
+    try:
+        # Read the JSON file
+        with open(LAST_UPDATED_JSON_PATH, "r") as json_file:
+            timestamps = json.load(json_file)  # Parse JSON into dict
+
+        # Check the 'is_live' flag
+        # BEGINNER NOTE: .get() returns False if 'is_live' key doesn't exist
+        return bool(timestamps.get("is_live", False))
+
+    except Exception:
+        return False  # If file is broken, assume sample data
+
+
+def get_data_last_updated(data_type="players"):
+    """
+    Get the timestamp when a specific data type was last updated.
+
+    Args:
+        data_type (str): Which data to check. One of:
+                         'players', 'teams', or 'games'
+
+    Returns:
+        str or None: ISO format timestamp string if available, None if never updated.
+
+    Example:
+        timestamp = get_data_last_updated("players")
+        if timestamp:
+            print(f"Players last updated: {timestamp}")
+    """
+    # Check if the timestamp file exists
+    if not LAST_UPDATED_JSON_PATH.exists():
+        return None  # Never been updated
+
+    try:
+        # Read and parse the JSON file
+        with open(LAST_UPDATED_JSON_PATH, "r") as json_file:
+            timestamps = json.load(json_file)
+
+        # Return the timestamp for the requested data type
+        # Returns None if this data type was never updated
+        return timestamps.get(data_type, None)
+
+    except Exception:
+        return None  # If any error, return None
+
+
+def save_last_updated_timestamp(data_type):
+    """
+    Save the current time as the last-updated timestamp for a data type.
+
+    This is called by live_data_fetcher.py after each successful fetch,
+    but can also be called manually if data is updated another way.
+
+    Args:
+        data_type (str): Which data was updated, e.g. 'players', 'teams'
+    """
+    # Load existing timestamps if the file exists
+    existing_timestamps = {}  # Start empty
+
+    if LAST_UPDATED_JSON_PATH.exists():
+        try:
+            with open(LAST_UPDATED_JSON_PATH, "r") as json_file:
+                existing_timestamps = json.load(json_file)
+        except Exception:
+            existing_timestamps = {}  # If broken, start fresh
+
+    # Set the current time as the timestamp for this data type
+    existing_timestamps[data_type] = datetime.datetime.now().isoformat()
+    existing_timestamps["is_live"] = True  # Mark that live data is loaded
+
+    # Save back to the file
+    try:
+        with open(LAST_UPDATED_JSON_PATH, "w") as json_file:
+            json.dump(existing_timestamps, json_file, indent=2)
+    except Exception as error:
+        print(f"Warning: Could not save timestamp: {error}")
+
+# ============================================================
+# END SECTION: Live Data Detection Functions
 # ============================================================

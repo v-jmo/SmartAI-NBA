@@ -26,13 +26,16 @@ cd path/to/SmartAI-NBA
 
 Replace `path/to/SmartAI-NBA` with the actual folder path (e.g., `cd ~/Downloads/SmartAI-NBA`).
 
-### Step 3: Install Streamlit (the Only Dependency)
+### Step 3: Install Dependencies
 
 ```bash
-pip install streamlit
+pip install streamlit nba_api
 ```
 
-That's it! Only one package to install.
+Or using the requirements file:
+```bash
+pip install -r requirements.txt
+```
 
 ### Step 4: Run the App
 
@@ -49,17 +52,18 @@ Your browser will automatically open to `http://localhost:8501` with the app run
 ```
 SmartAI-NBA/
 ├── app.py                              # Main entry point — run this!
-├── requirements.txt                    # Only: streamlit
+├── requirements.txt                    # streamlit + nba_api
 ├── README.md                           # This file
 │
 ├── pages/
-│   ├── 1_🏀_Todays_Games.py           # Select tonight's games
+│   ├── 1_🏀_Todays_Games.py           # Select tonight's games (+ auto-load)
 │   ├── 2_📥_Import_Props.py           # Enter/upload prop lines
 │   ├── 3_🏆_Analysis.py               # Run analysis + see top picks
 │   ├── 4_🎰_Entry_Builder.py          # Build optimal parlays
 │   ├── 5_🚫_Avoid_List.py             # What NOT to bet
 │   ├── 6_📊_Model_Health.py           # Track performance
-│   └── 7_⚙️_Settings.py              # Configure settings
+│   ├── 7_⚙️_Settings.py              # Configure settings
+│   └── 8_🔄_Update_Data.py           # Fetch live NBA data ← NEW!
 │
 ├── engine/
 │   ├── math_helpers.py                 # All math from scratch (no scipy)
@@ -71,10 +75,12 @@ SmartAI-NBA/
 │
 ├── data/
 │   ├── data_manager.py                # Load/save CSV data
-│   ├── sample_players.csv             # 30 players with 2025-26 stats
+│   ├── live_data_fetcher.py           # Live NBA data fetcher ← NEW!
+│   ├── sample_players.csv             # Player stats (sample OR live)
 │   ├── sample_props.csv               # 40 sample prop lines
 │   ├── teams.csv                      # All 30 NBA teams with pace/ratings
-│   └── defensive_ratings.csv          # Team defense by position
+│   ├── defensive_ratings.csv          # Team defense by position
+│   └── last_updated.json              # Timestamps (created after first update)
 │
 ├── tracking/
 │   ├── bet_tracker.py                 # Log bets + results
@@ -146,6 +152,66 @@ Configure:
 - **Entry Fee**: Default dollar amount for EV calculations
 - **Advanced factors**: Home court boost, fatigue sensitivity, etc.
 
+### 🔄 Page 8: Update Data *(NEW!)*
+Fetch live, real-time NBA data from the official NBA stats API:
+- **Fetch Tonight's Games** — Auto-loads tonight's real matchups
+- **Update Player Stats** — Pulls current season averages for all players
+- **Update Team Stats** — Pulls real pace, ORTG, DRTG for all teams
+- **Update Everything** — Does all of the above in one click
+
+See the **Live Data** section below for full details.
+
+---
+
+## 🔴 Live NBA Data
+
+SmartAI-NBA can use **real, up-to-date NBA stats** via the free `nba_api` library.
+No API key or account needed!
+
+### Installing nba_api
+
+```bash
+python -m pip install nba_api
+```
+
+Or install all dependencies at once:
+```bash
+pip install -r requirements.txt
+```
+
+### How to Use Live Data
+
+1. Install `nba_api` (see above)
+2. Run the app: `streamlit run app.py`
+3. Go to the **🔄 Update Data** page (page 8 in the sidebar)
+4. Click **"🔄 Update Everything"** to fetch all live stats
+5. Wait a few minutes (the fetcher is polite — it delays 1.5s between calls)
+6. All other pages will now use real stats!
+
+### When to Update
+
+- **Before each betting session** for best accuracy
+- Player and team situations change throughout the season
+- The home page shows when data was last updated
+
+### What Gets Updated
+
+| Data | Source | File Updated |
+|------|--------|-------------|
+| Player stats (PPG, RPG, APG, etc.) | LeagueDashPlayerStats | `sample_players.csv` |
+| Standard deviations | PlayerGameLog (last 20 games) | `sample_players.csv` |
+| Team pace + ratings (ORTG/DRTG) | LeagueDashTeamStats | `teams.csv` |
+| Defensive ratings by position | Calculated from team drtg | `defensive_ratings.csv` |
+| Tonight's games | ScoreboardV2 | Session state |
+
+### Sample Data vs Live Data
+
+The app ships with **sample data** so it works immediately without any setup.
+The sample data is from a recent NBA season but may be slightly outdated.
+
+After running **Update Everything**, the CSVs are overwritten with real data.
+The home page shows a banner indicating which type of data you're using.
+
 ---
 
 ## 📊 How to Add Your Own Data
@@ -175,6 +241,15 @@ Run: `pip install streamlit` first.
 
 ### "ModuleNotFoundError: No module named 'streamlit'"
 Run: `pip install streamlit` and make sure you're using the right Python version.
+
+### "ModuleNotFoundError: No module named 'nba_api'"
+Run: `pip install nba_api`. The app works without it (using sample data),
+but you need it to fetch live stats on the **🔄 Update Data** page.
+
+### Live data update takes too long
+This is normal! The fetcher adds a 1.5-second delay between API calls to avoid
+being blocked by the NBA's servers. A full update (all players + game logs) can
+take 5-15 minutes. Let it run — don't close the tab.
 
 ### "Port 8501 is already in use"
 Another Streamlit app is running. Close it, or run on a different port:
@@ -220,10 +295,16 @@ Positive EV = profitable on average. Negative EV = house wins.
 ## 📦 Dependencies
 
 ```
-streamlit
+streamlit   # UI framework (required)
+nba_api     # Live NBA data (optional but recommended)
 ```
 
-That's it! All other functionality uses Python's standard library:
+Install both:
+```bash
+pip install streamlit nba_api
+```
+
+All other functionality uses Python's standard library:
 `math`, `random`, `statistics`, `csv`, `sqlite3`, `datetime`, `os`, `pathlib`,
 `itertools`, `collections`, `json`, `io`, `copy`
 
