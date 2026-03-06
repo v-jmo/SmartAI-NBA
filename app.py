@@ -7,7 +7,7 @@
 # CONCEPTS COVERED: Streamlit basics, session state, page config
 # ============================================================
 
-# Import streamlit — our ONLY external package
+# Import streamlit — our main UI framework
 import streamlit as st  # st is the standard alias everyone uses
 
 # Standard library imports (no install needed — comes with Python)
@@ -16,6 +16,12 @@ import os        # For file path checks
 
 # Import our data loading module
 from data.data_manager import load_players_data, load_props_data, load_teams_data
+
+# Import our live data status checker
+# BEGINNER NOTE: load_last_updated reads a JSON file that tracks when
+# live data was last fetched. If the file doesn't exist, it means we
+# are still using sample data.
+from data.live_data_fetcher import load_last_updated
 
 # Import our database initializer (creates the DB on first run)
 from tracking.database import initialize_database
@@ -145,6 +151,56 @@ with column4:
 st.divider()
 
 # ============================================================
+# SECTION: Live Data Status Indicator
+# Show whether the app is using sample data or live data,
+# and when data was last updated.
+# ============================================================
+
+# Load timestamps from last_updated.json
+# BEGINNER NOTE: load_last_updated() returns a dict like:
+# {'players': '2026-03-06T14:30:00', 'teams': '...', 'is_live': True}
+# If the file doesn't exist yet, it returns an empty dict {}.
+live_data_timestamps = load_last_updated()
+
+# Check if we have any live data (is_live flag is set)
+is_using_live_data = live_data_timestamps.get("is_live", False)
+
+if is_using_live_data:
+    # Show which data types have been updated and when
+    player_ts = live_data_timestamps.get("players")   # Player update timestamp
+    team_ts = live_data_timestamps.get("teams")        # Team update timestamp
+
+    # Format timestamps for display (convert ISO format to human-readable)
+    def format_timestamp(ts_string):
+        """Convert ISO timestamp string to friendly format like 'Mar 6, 2:30 PM'."""
+        if not ts_string:
+            return "never"  # No timestamp = never updated
+        try:
+            dt = datetime.datetime.fromisoformat(ts_string)
+            return dt.strftime("%b %d at %I:%M %p")  # e.g. "Mar 6 at 2:30 PM"
+        except Exception:
+            return "unknown"  # If parsing fails, show "unknown"
+
+    # Show a success banner with last update times
+    st.success(
+        f"✅ **Using Live NBA Data** — "
+        f"Players: {format_timestamp(player_ts)} | "
+        f"Teams: {format_timestamp(team_ts)}"
+    )
+else:
+    # No live data — show a reminder to update
+    st.info(
+        "📊 **Using Sample Data** — Go to the **🔄 Update Data** page to pull "
+        "real, up-to-date NBA stats for more accurate predictions!"
+    )
+
+# ============================================================
+# END SECTION: Live Data Status Indicator
+# ============================================================
+
+st.divider()
+
+# ============================================================
 # SECTION: Quick Start Guide
 # Show new users exactly how to use the app.
 # ============================================================
@@ -155,7 +211,11 @@ left_column, right_column = st.columns([2, 1])
 with left_column:
     st.subheader("🚀 Quick Start Guide")
     st.markdown("""
-    **Follow these 5 steps to find tonight's best bets:**
+    **Follow these steps to find tonight's best bets:**
+
+    **Step 0** → 🔄 **Update Data** *(optional but recommended)* — Click
+    "Update Everything" to pull real, live NBA stats before you start.
+    The app works with sample data, but live data is much more accurate!
 
     **Step 1** → 🏀 **Today's Games** — Select which teams are playing tonight
     and enter the Vegas spread + total for each game.

@@ -16,6 +16,12 @@ import datetime  # For today's date
 # Import our data manager to get team names
 from data.data_manager import load_teams_data, get_all_team_abbreviations
 
+# Import the live games fetcher
+# BEGINNER NOTE: We import this here so the button can call it.
+# If nba_api is not installed, only the button will fail gracefully —
+# the rest of the page (manual entry) still works perfectly.
+from data.live_data_fetcher import fetch_todays_games
+
 # ============================================================
 # SECTION: Page Setup
 # ============================================================
@@ -28,6 +34,63 @@ st.set_page_config(
 
 st.title("🏀 Today's Games")
 st.markdown("Select tonight's NBA matchups and enter Vegas lines for each game.")
+
+# ============================================================
+# SECTION: Auto-Load Tonight's Games Button
+# Fetch real games from the NBA API with one click.
+# ============================================================
+
+# BEGINNER NOTE: This button calls the live data fetcher to automatically
+# populate tonight's games. It's the fastest way to set up the page!
+# If nba_api isn't installed or the API fails, it falls back gracefully.
+
+auto_col, info_col = st.columns([1, 3])  # Button on left, info on right
+
+with auto_col:
+    # The Auto-Load button
+    auto_load_clicked = st.button(
+        "🔄 Auto-Load Tonight's Games",
+        use_container_width=True,
+        type="primary",   # Make it stand out as the recommended action
+        help="Automatically fetch tonight's real NBA matchups from the NBA API",
+    )
+
+with info_col:
+    # Remind user about the fallback
+    st.caption(
+        "Click to automatically fetch tonight's real games from the NBA API "
+        "(nba_api must be installed). Or use the manual form below."
+    )
+
+# Handle the auto-load button click
+if auto_load_clicked:
+    # Show a spinner while we fetch
+    with st.spinner("Fetching tonight's games from NBA API..."):
+        fetched_games = fetch_todays_games()  # Call the live fetcher
+
+    if fetched_games:
+        # Save to session state so the page updates
+        st.session_state["todays_games"] = fetched_games
+        st.success(
+            f"✅ Loaded **{len(fetched_games)} game(s)** for tonight! "
+            "Edit the spreads and totals below if needed."
+        )
+        # Rerun to refresh the page with the new games showing
+        st.rerun()
+    else:
+        # The API returned nothing — show a helpful message
+        st.warning(
+            "⚠️ Could not auto-load games. Possible reasons:\n"
+            "- `nba_api` is not installed (run: `pip install nba_api`)\n"
+            "- No games scheduled tonight\n"
+            "- No internet connection\n\n"
+            "Please enter games manually using the form below."
+        )
+
+# ============================================================
+# END SECTION: Auto-Load Tonight's Games Button
+# ============================================================
+
 st.divider()
 
 # ============================================================
